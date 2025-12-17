@@ -1,0 +1,9 @@
+requests>=2.31.0
+kafka-python>=2.0.2
+sentence-transformers>=2.6.1
+torch>=2.1.0
+chromadb>=0.4.24
+numpy>=1.26.0
+scikit-learn>=1.4.0
+sqlite-utils>=3.36
+
