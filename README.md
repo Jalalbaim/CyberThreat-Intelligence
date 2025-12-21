@@ -4,11 +4,11 @@ RAG System for Cyber Threat monitoring
 
 @authors: MJ.BAIM, A.ORKHIS
 
-
 Ingestion Kafka + Zookeeper
 on va avoir deux TOPICS
 
 ### Topics utilisés
+
 raw-data : données brutes (pulses OTX non modifiés, enveloppés dans un message)
 structured-data : documents normalisés prêts pour stockage SQL + embeddings
 
@@ -30,6 +30,7 @@ export OTX_API_KEY=VOTRE_CLE_API_OTX
 VOTRE_CLE_API_OTX = voir sur AlienVault OTX API
 
 ### Data Ingestion (OTX → Kafka)
+
 python otx_producer.py
 
 Vérification :
@@ -39,6 +40,7 @@ bin/kafka-console-consumer.sh
 --from-beginning
 
 ### Data Transformation (Raw → Structured)
+
 python otx_transformer.py
 
 Vérification :
@@ -50,6 +52,7 @@ bin/kafka-console-consumer.sh
 La pipeline se divise en deux :
 
 ### SQL Pipeline threats.db
+
 Créer les tables en utilisant python init_db.py.
 Utilise-le si c’est la première fois que tu exécutes le code, sinon tu as deux options :
 soit supprimer la table qui apparaît dans ton répertoire,
@@ -58,7 +61,10 @@ soit réinitialiser la base.
 python sql_consumer.py lie le topic Raw data à la table SQL et stocke les données
 
 ### La pipeline qui va nous servir :
+
 python embedding_consumer.py
 
+## Lancer Kafka
 
-
+Zookeeper: 'bin/zookeeper-server-start.sh config/zookeeper.properties'
+Kafka : 'bin/kafka-server-start.sh config/server.properties'
