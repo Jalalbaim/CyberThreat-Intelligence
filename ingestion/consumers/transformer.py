@@ -3,7 +3,7 @@ import sqlite3
 import chromadb
 from kafka import KafkaConsumer
 
-# 1. Database Connections
+# Database
 sql_conn = sqlite3.connect('./data/threat_archive.db', check_same_thread=False)
 cursor = sql_conn.cursor()
 cursor.execute('''CREATE TABLE IF NOT EXISTS archive 
@@ -11,8 +11,9 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS archive
 
 chroma_client = chromadb.PersistentClient(path="./data/chroma_db")
 collection = chroma_client.get_or_create_collection(name="threat_intel")
+print(collection._embedding_function)
 
-# 2. Kafka Consumer Setup
+# Kafka Consumer
 consumer = KafkaConsumer(
     'raw_threats',
     bootstrap_servers=['localhost:9092'],
@@ -20,19 +21,20 @@ consumer = KafkaConsumer(
     value_deserializer=lambda m: json.loads(m.decode('utf-8'))
 )
 
-print("🚀 Transformer Consumer is listening...")
+print("Transformer Consumer is listening...")
 
 for message in consumer:
     threat = message.value
     
-    # --- WRITE 1: SQL Archive ---
+    # --- SQL Archive ---
     cursor.execute(
         "INSERT INTO archive (source, description, iocs, severity, timestamp) VALUES (?, ?, ?, ?, ?)",
         (threat['source'], threat['description'], str(threat['iocs']), threat['severity'], threat['timestamp'])
     )
     sql_conn.commit()
 
-    # --- WRITE 2: ChromaDB (Vector Store) ---
+    # --- ChromaDB (Vector Store) ---
+    
     collection.add(
         documents=[threat['description']],
         metadatas=[{

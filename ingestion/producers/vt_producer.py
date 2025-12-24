@@ -10,8 +10,8 @@ sys.path.insert(0, project_root)
 
 from schemas.threat_model import ThreatRecord  
 
-VT_API_KEY = "b5a051b259b69aa9e52070086badd3556360863cbc9d77d265637b8890fd9bdb"
-
+VT_API_KEY = "API KEY"
+#b5a051b259b69aa9e52070086badd3556360863cbc9d77d265637b8890fd9bdb
 producer = KafkaProducer(
     bootstrap_servers=['localhost:9092'],
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
