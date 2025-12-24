@@ -19,7 +19,7 @@ _Turning chaos into actionable intelligence, one threat at a time_
 
 ## 💡 What is This?
 
-A **production-grade RAG (Retrieval-Augmented Generation)** system that continuously monitors cyber threats from **AlienVault OTX**, processes them in real-time using **Apache Kafka**, and delivers AI-powered intelligence reports through **Ollama's Gemma 3:4b** LLM.
+A **RAG (Retrieval-Augmented Generation)** system that continuously monitors cyber threats from **AlienVault OTX**, processes them in real-time using **Apache Kafka**, and delivers AI-powered intelligence reports through **Ollama's Gemma 3:4b** LLM.
 
 Think of it as your **personal cyber threat analyst** that never sleeps. 🕵️‍♂️
 

@@ -11,6 +11,7 @@ def get_hybrid_context(query, window_minutes=60):
 
     # Hybrid Search: Combining Vector and Keyword
     # Chroma handles the vector search, and we apply a metadata filter for time
+
     results = collection.query(
         query_texts=[query],
         n_results=10,
@@ -20,6 +21,5 @@ def get_hybrid_context(query, window_minutes=60):
     if not results['documents'][0]:
         return "No threats detected in the last 60 minutes."
     
-    # Formatting context for the LLM
     context = "\n---\n".join(results['documents'][0])
     return context
