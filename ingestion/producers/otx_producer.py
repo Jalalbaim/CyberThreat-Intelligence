@@ -4,22 +4,17 @@
 import time
 import json
 import requests
-import os
-from datetime import datetime, timezone
 from kafka import KafkaProducer
 from requests.exceptions import RequestException
 
-# =======================
-# CONFIGURATION
-# =======================
 BROKER = "localhost:9092"
-TOPIC = "raw-data"
+TOPIC = "raw_threats"
 OTX_API_URL = "https://otx.alienvault.com/api/v1/pulses/subscribed?limit=20"
 
 POLL_INTERVAL = 60          # seconds
 MAX_BACKOFF = 900           # 15 minutes
 
-OTX_API_KEY = os.getenv("OTX_API_KEY")
+OTX_API_KEY = "59f56bfc4068e511e17c3702349e4dd2a000c7217a3ad5ededb9eaf388211ad0"
 if not OTX_API_KEY:
     raise RuntimeError("OTX_API_KEY not set")
 
@@ -27,9 +22,7 @@ HEADERS = {
     "X-OTX-API-KEY": OTX_API_KEY
 }
 
-# =======================
-# KAFKA PRODUCER
-# =======================
+# Producer
 producer = KafkaProducer(
     bootstrap_servers=BROKER,
     key_serializer=lambda k: k.encode("utf-8"),
@@ -41,15 +34,8 @@ producer = KafkaProducer(
 
 print("[INGESTION] OTX ingestion started")
 
-# =======================
-# STATE
-# =======================
-seen_pulses = set() # to track already sent pulse IDs
-backoff = POLL_INTERVAL # initial backoff
-
-# =======================
-# STREAMING LOOP
-# =======================
+seen_pulses = set()
+backoff = POLL_INTERVAL
 while True: # main loop
     try:
         response = requests.get( 
@@ -71,12 +57,34 @@ while True: # main loop
 
             seen_pulses.add(pulse_id)# mark as seen
 
+            # Extract IOCs from indicators
+            iocs = []
+            for indicator in pulse.get("indicators", []):
+                ioc_value = indicator.get("indicator")
+                if ioc_value:
+                    iocs.append(ioc_value)
+
+            # Determine severity based on pulse tags or default to Medium
+            tags = pulse.get("tags", [])
+            severity = "Medium"  # default
+            if any(tag.lower() in ["critical", "high", "severe"] for tag in tags):
+                severity = "High"
+            elif any(tag.lower() in ["low", "info"] for tag in tags):
+                severity = "Low"
+
+            # Build description from pulse data
+            description = pulse.get("description", "")
+            if not description:
+                description = pulse.get("name", "No description available")
+
+            # Create ThreatRecord-compliant message
             message = {
-                "source": "otx",
-                "type": "pulse",
-                "pulse_id": pulse_id,
-                "fetched_at": datetime.now(timezone.utc).isoformat(),
-                "pulse": pulse
+                "source": "OTX",
+                "threat_type": pulse.get("tags", ["Unknown"])[0] if pulse.get("tags") else "Unknown",
+                "description": description,
+                "iocs": iocs,
+                "severity": severity,
+                "timestamp": time.time()
             }
 
             producer.send(

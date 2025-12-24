@@ -67,4 +67,7 @@ python embedding_consumer.py
 ## Lancer Kafka
 
 Zookeeper: 'bin/zookeeper-server-start.sh config/zookeeper.properties'
+
 Kafka : 'bin/kafka-server-start.sh config/server.properties'
+
+source .venv/bin/activate
