@@ -1,8 +1,5 @@
 import ollama
 
-# Configure Ollama client to use Windows host from WSL
-client = ollama.Client(host='http://localhost:11434')
-
 def generate_threat_report(query, context):
     system_prompt = (
         "You are an expert Cyber Threat Intelligence Analyst. "
@@ -13,7 +10,7 @@ def generate_threat_report(query, context):
     full_prompt = f"{system_prompt}\n\nUSER QUERY: {query}\n\nDATA CONTEXT:\n{context}"
     
     try:
-        response = client.generate(
+        response = ollama.generate(
             model="gemma3:4b",
             prompt=full_prompt
         )
