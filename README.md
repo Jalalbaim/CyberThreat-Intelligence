@@ -4,26 +4,16 @@
 
 ### Real-Time Threat Detection & Analysis with RAG Architecture
 
-_Turning chaos into actionable intelligence, one threat at a time_
-
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![Kafka](https://img.shields.io/badge/Apache%20Kafka-3.6.0-black?style=for-the-badge&logo=apache-kafka)](https://kafka.apache.org/)
 [![Ollama](https://img.shields.io/badge/Ollama-Gemma%203:4b-purple?style=for-the-badge)](https://ollama.com/)
 [![License](https://img.shields.io/badge/License-Educational-green?style=for-the-badge)](LICENSE)
 
-**[Features](#-key-features)** • **[Architecture](#-architecture)** • **[Quick Start](#-quick-start)** • **[Demo](#-demo)**
-
 </div>
-
----
 
 ## 💡 What is This?
 
 A **RAG (Retrieval-Augmented Generation)** system that continuously monitors cyber threats from **AlienVault OTX**, processes them in real-time using **Apache Kafka**, and delivers AI-powered intelligence reports through **Ollama's Gemma 3:4b** LLM.
-
-Think of it as your **personal cyber threat analyst** that never sleeps. 🕵️‍♂️
-
----
 
 ## ✨ Key Features
 
@@ -77,16 +67,16 @@ Think of it as your **personal cyber threat analyst** that never sleeps. 🕵️
 ```mermaid
 %%{init: {'theme':'dark'}}%%
 graph LR
-    A[🌐 AlienVault OTX] -->|REST API| B[📡 Producer]
-    B -->|ThreatRecord| C[📨 Kafka Topic<br/>raw_threats]
-    C -->|Stream| D[⚙️ Transformer]
-    D -->|Vectors| E[(🔮 ChromaDB<br/>Vector Store)]
-    D -->|Archive| F[(💾 SQLite<br/>threat_archive.db)]
-    G[👤 Security Analyst] -->|Query| H[🤖 RAG App]
+    A[AlienVault OTX] -->|REST API| B[Producer]
+    B -->|ThreatRecord| C[Kafka Topic<br/>raw_threats]
+    C -->|Stream| D[Transformer]
+    D -->|Vectors| E[(ChromaDB<br/>Vector Store)]
+    D -->|Archive| F[(SQLite<br/>threat_archive.db)]
+    G[Security Analyst] -->|Query| H[RAG App]
     H -->|Hybrid Search| E
     E -->|Context| H
-    H -->|Prompt| I[🧠 Ollama LLM<br/>Gemma 3:4b]
-    I -->|Report| J[📊 Intelligence Brief]
+    H -->|Prompt| I[Ollama LLM<br/>Gemma 3:4b]
+    I -->|Report| J[Intelligence Brief]
 
     style A fill:#ff6b6b,stroke:#c92a2a,color:#fff
     style C fill:#4ecdc4,stroke:#087f5b,color:#fff
@@ -100,7 +90,7 @@ graph LR
 
 ```
 ┌─────────────────┐
-│  1. INGESTION   │  OTX Producer fetches threat pulses every 60s
+│  1. INGESTION   │  OTX Producer fetches threat pulses every
 └────────┬────────┘
          │
 ┌────────▼────────┐
@@ -112,7 +102,7 @@ graph LR
 └────────┬────────┘
          │
 ┌────────▼────────┐
-│  4. RETRIEVAL   │  Hybrid search finds relevant threats (last 60min)
+│  4. RETRIEVAL   │  Hybrid search finds relevant threats
 └────────┬────────┘
          │
 ┌────────▼────────┐
@@ -147,8 +137,6 @@ CyberThreat-Intelligence/
     ├── threat_archive.db       # SQLite archival
     └── chroma_db/              # ChromaDB vector store
 ```
-
----
 
 ## 🎬 Running the System
 
