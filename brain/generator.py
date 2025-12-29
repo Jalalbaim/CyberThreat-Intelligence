@@ -11,7 +11,7 @@ def generate_threat_report(query, context):
     
     try:
         response = ollama.generate(
-            model="gemma3:1b",
+            model="gemma3:4b",
             prompt=full_prompt
         )
         return response['response']
