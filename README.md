@@ -150,37 +150,6 @@ CyberThreat-Intelligence/
 
 ---
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-| Tool           | Version | Purpose                    |
-| -------------- | ------- | -------------------------- |
-| 🐍 Python      | 3.8+    | Runtime environment        |
-| ☕ Java        | 8+      | Kafka/Zookeeper dependency |
-| 🤖 Ollama      | Latest  | Local LLM inference        |
-| 🔑 OTX API Key | -       | AlienVault access          |
-
-### ⚡ Installation (3 minutes)
-
-```bash
-# 1️⃣ Navigate to project
-cd kafka_2.12-3.6.0
-
-# 2️⃣ Create virtual environment
-python3 -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# 3️⃣ Install dependencies
-pip install -r CyberThreat-Intelligence/requirements.txt
-
-# 4️⃣ Install Ollama & download model
-curl -fsSL https://ollama.com/install.sh | sh  # Linux/WSL
-ollama pull gemma3:4b
-```
-
----
-
 ## 🎬 Running the System
 
 ### 🔥 Full Pipeline (7 terminals)
@@ -290,123 +259,10 @@ credential harvesting via fake login portals.
 ==================================================
 ```
 
----
-
-## 🔧 Configuration
-
-### Environment Variables (Optional)
-
-Create a `.env` file in the project root:
-
-```bash
-OTX_API_KEY=your_otx_api_key_here
-KAFKA_BROKER=localhost:9092
-OLLAMA_HOST=http://localhost:11434
-```
-
-### Key Parameters
-
-| Component | Setting       | Default       | Notes                          |
-| --------- | ------------- | ------------- | ------------------------------ |
-| Kafka     | Topic         | `raw_threats` | Can be changed in code         |
-| OTX       | Poll Interval | 60s           | Line 12 in `otx_producer.py`   |
-| ChromaDB  | Time Window   | 60 min        | Configurable in `retriever.py` |
-| Ollama    | Model         | `gemma3:4b`   | 3.3 GB download                |
-
----
-
-## 🧪 Testing & Verification
-
-### Check Kafka Messages
-
-```bash
-bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 \
-  --topic raw_threats --from-beginning
-```
-
-### Inspect ChromaDB
-
-```python
-import chromadb
-client = chromadb.PersistentClient(path="./data/chroma_db")
-collection = client.get_collection(name="threat_intel")
-print(f"📊 Total threats: {collection.count()}")
-```
-
-### Test Ollama Connection
-
-```bash
-curl http://localhost:11434/api/version
-```
-
----
-
-## 🐛 Troubleshooting
-
-<details>
-<summary><b>❌ Error: Collection [threat_intel] does not exist</b></summary>
-
-**Cause:** Transformer hasn't created the ChromaDB collection yet.
-
-**Fix:**
-
-1. Ensure transformer is running
-2. Wait 30 seconds for first messages to process
-3. Retry query
-
-</details>
-
-<details>
-<summary><b>❌ Error: Failed to connect to Ollama</b></summary>
-
-**Cause:** Ollama server not running.
-
-**Fix:**
-
-```bash
-# Check if running
-curl http://localhost:11434/api/version
-
-# If not, start it
-ollama serve
-```
-
-</details>
-
-<details>
-<summary><b>❌ No threats found in last 60 minutes</b></summary>
-
-**Cause:** No recent data or producer not running.
-
-**Fix:**
-
-1. Check producer logs for errors
-2. Verify OTX API key is valid
-3. Check transformer is processing messages
-
-</details>
-
----
-
-## 📚 Tech Stack
-
-<div align="center">
-
-| Layer              | Technology          | Purpose                      |
-| ------------------ | ------------------- | ---------------------------- |
-| 🌐 **Data Source** | AlienVault OTX      | Threat intelligence feeds    |
-| 📡 **Streaming**   | Apache Kafka 3.6.0  | Distributed message broker   |
-| 🔮 **Vector DB**   | ChromaDB            | Semantic search & embeddings |
-| 💾 **Archive**     | SQLite              | Long-term data storage       |
-| 🧠 **LLM**         | Ollama (Gemma 3:4b) | Natural language generation  |
-| 🐍 **Backend**     | Python 3.8+         | Core application logic       |
-| ✅ **Validation**  | Pydantic            | Data schema validation       |
-
-</div>
-
 ## 🧠 Enriched Threat Intelligence Pipeline
+
 In this part, the system was **architecturally designed to support multiple threat intelligence sources**
-(AlienVault OTX, VirusTotal, MISP) , each intelligence source is isolated in its own Kafka producer 
+(AlienVault OTX, VirusTotal, MISP) , each intelligence source is isolated in its own Kafka producer
 and normalized into a shared ThreatRecord schema, ensuring downstream components remain source-agnostic.
 while the **final operational pipeline focuses on a single
 reliable ingestion source** due to practical constraints.
@@ -444,6 +300,7 @@ Although VirusTotal offers valuable enrichment capabilities, it was excluded fro
 As a result, VirusTotal was deemed incompatible with the project’s runtime ingestion requirements and operational goals.
 
 Quota exceeded notification:
+
 ```
 Hello,
 
@@ -463,7 +320,7 @@ As a result, any scripts, automated workflows, or integrations relying on this s
 
 ### 🔸 MISP (CERT-FR Public Feed)
 
-**Role:** Supplementary threat intelligence source 
+**Role:** Supplementary threat intelligence source
 
 MISP ingestion was explored using the CERT-FR public feed, but practical limitations prevented effective integration:
 
@@ -474,15 +331,14 @@ MISP ingestion was explored using the CERT-FR public feed, but practical limitat
 Effective use of MISP would require deploying and maintaining a **private MISP instance** with full event access, synchronization, and governance.  
 Such a setup would be disproportionately complex and resource-intensive for a small-scale academic project.
 
-
 ## 🏗️ Overall Pipeline Design (Multi-Source)
 
 ```
 ┌──────────────────────────┐
-│       1. INGESTION       │ 
-│                          │     
-│ • OTX Producer           │       Pulls raw threat intel  
-│ • MISP Producer          │        
+│       1. INGESTION       │
+│                          │
+│ • OTX Producer           │       Pulls raw threat intel
+│ • MISP Producer          │
 └────────────┬─────────────┘
              │
              ▼
@@ -499,8 +355,8 @@ Such a setup would be disproportionately complex and resource-intensive for a sm
 │      3. ENRICHMENT       │
 │                          │    • Queries VirusTotal (Not used in ingestion because of rate limits)
 │ vt_enricher.py           │    • Consumer from raw_threats
-│ Consumer and Producer    │    • Producer to enriched_threats     │   
-└────────────┬─────────────┘    
+│ Consumer and Producer    │    • Producer to enriched_threats     │
+└────────────┬─────────────┘
              │
              ▼
 ┌──────────────────────────┐
@@ -535,11 +391,11 @@ Such a setup would be disproportionately complex and resource-intensive for a sm
 │      7. GENERATION       │
 └──────────────────────────┘
 ```
+
 # Conclusion of Multi-Source RAG Design
 
 In the final implementation, **AlienVault OTX** was selected as the sole active threat intelligence ingestion source.  
 This decision was driven by practical constraints related to accessibility, cost, and operational feasibility rather than theoretical completeness.
-
 
 ## Why AlienVault OTX Was Used
 
@@ -550,20 +406,11 @@ AlienVault OTX was chosen because it aligns well with the project’s real-time 
 - Supports **near real-time ingestion**, suitable for SOC-style analysis
 - Integrates naturally into a **Kafka-based streaming architecture**
 
-For automated intelligence report generation, OTX offered the most balanced trade-off between data quality, contextual depth, and operational simplicity. 
+For automated intelligence report generation, OTX offered the most balanced trade-off between data quality, contextual depth, and operational simplicity.
 
 Although VirusTotal and MISP offer valuable intelligence, their access limitations and operational overhead made them unsuitable for this project’s real-time ingestion goals.
 
 The final architecture prioritizes operational realism, reproducibility, and sustainability, while remaining multi-source ready for future extensions.
-
-## 🎓 Learning Resources
-
-- [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
-- [ChromaDB Guide](https://docs.trychroma.com/)
-- [Ollama Documentation](https://github.com/ollama/ollama)
-- [AlienVault OTX API](https://otx.alienvault.com/api)
-
----
 
 ## 👥 Contributors
 
@@ -585,18 +432,6 @@ The final architecture prioritizes operational realism, reproducibility, and sus
 </td>
 </tr>
 </table>
-
----
-
-## 📄 License
-
-This project is for **educational purposes** as part of a Cybersecurity Intelligence course.
-
----
-
-## ⚠️ Security Notice
-
-> **🔐 Important:** Never commit API keys to version control. Use environment variables or `.env` files (add to `.gitignore`).
 
 ---
 
