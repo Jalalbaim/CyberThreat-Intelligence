@@ -1,23 +1,107 @@
 import time
+import re
 import chromadb
+import json 
 
-def get_hybrid_context(query, window_minutes=60):
+def get_hybrid_context(query, window_minutes=60, top_k=10, vector_weight=0.7):
+    """
+    Hybrid retrieval: combine vector (embedding) similarity with simple lexical (keyword) similarity.
+    - vector_weight is weight given to the vector score (0..1). Keyword weight = 1 - vector_weight.
+    - top_k number of results to return.
+    """
+
     client = chromadb.PersistentClient(path="./data/chroma_db")
     collection = client.get_collection(name="threat_intel")
-    
 
     current_time = time.time()
     time_threshold = current_time - (window_minutes * 60)
 
-    # Hybrid Search
-    results = collection.query(
+    # --- Vector search: ask Chroma for nearest neighbors and distances ---
+    vector_res = collection.query(
         query_texts=[query],
-        n_results=10,
-        where={"timestamp": {"$gte": time_threshold}}
+        n_results=top_k,
+        where={"timestamp": {"$gte": time_threshold}},
+        include=["documents", "metadatas", "distances"]
     )
+ 
+    vec_ids = vector_res.get("ids", [[]])[0]
+    vec_docs = vector_res.get("documents", [[]])[0]
+    vec_distances = vector_res.get("distances", [[]])[0]
+
+    # vector score dict 
+    vector_scores = {}
+    if vec_distances:
+        max_d = max(vec_distances)
+        min_d = min(vec_distances)
+        for _id, d in zip(vec_ids, vec_distances):
+            if max_d == min_d:
+                s = 1.0
+            else:
+                s = 1.0 - ((d - min_d) / (max_d - min_d))
+            vector_scores[_id] = float(s)
+    else:
+        vector_scores = {}
+
+    with open("./data/threat_intel_vector_scores.json", "w") as f:
+        json.dump(vector_scores, f)
+
+    # --- Keyword search ---
+    all_data = collection.get(
+        where={"timestamp": {"$gte": time_threshold}},
+        include=["documents", "metadatas"]
+    )
+
+    ids = all_data.get("ids", [])
+    docs = all_data.get("documents", [])
+    if ids and isinstance(ids, list) and len(ids) > 0 and isinstance(ids[0], list):
+        ids = ids[0]
+    if docs and isinstance(docs, list) and len(docs) > 0 and isinstance(docs[0], list):
+        docs = docs[0]
+
+    if not docs:
+        return "No threats detected in the last {} minutes.".format(window_minutes)
+
+    def tokenize(text):
+        tokens = re.findall(r"\w+", (text or "").lower())
+        return set(tokens)
+
+    query_tokens = tokenize(query)
+
+    keyword_scores = {}
+    for _id, doc in zip(ids, docs):
+        doc_tokens = tokenize(doc)
+        if not query_tokens:
+            score = 0.0
+        else:
+            overlap = len(query_tokens.intersection(doc_tokens))
+            score = overlap / len(query_tokens)
+        keyword_scores[_id] = float(score)
     
-    if not results['documents'][0]:
-        return "No threats detected in the last 60 minutes."
-    
-    context = "\n---\n".join(results['documents'][0])
+    with open("./data/keyword_scores.json", "w") as f:
+        json.dump(keyword_scores, f)
+
+    # --- Ranker ---
+    combined_scores = {}
+    all_candidate_ids = set(list(vector_scores.keys()) + list(keyword_scores.keys()))
+
+    for _id in all_candidate_ids:
+        v = vector_scores.get(_id, 0.0)
+        k = keyword_scores.get(_id, 0.0)
+        combined = vector_weight * v + (1.0 - vector_weight) * k
+        combined_scores[_id] = combined
+
+    # Pick top_k
+    ranked = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    ranked_ids = [r[0] for r in ranked]
+
+    # id -> document mapping
+    id_to_doc = dict(zip(ids, docs))
+    id_to_doc.update(dict(zip(vec_ids, vec_docs)))
+
+    ranked_docs = [id_to_doc.get(_id, "") for _id in ranked_ids if id_to_doc.get(_id, "")]
+
+    if not ranked_docs:
+        return "No relevant threats found in the last {} minutes.".format(window_minutes)
+
+    context = "\n---\n".join(ranked_docs)
     return context
