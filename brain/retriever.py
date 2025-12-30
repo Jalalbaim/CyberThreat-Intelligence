@@ -2,11 +2,12 @@ import time
 import re
 import chromadb
 import json 
+from rank_bm25 import BM25Okapi
 
 def get_hybrid_context(query, window_minutes=60, top_k=10, vector_weight=0.7):
     """
-    Hybrid retrieval: combine vector (embedding) similarity with simple lexical (keyword) similarity.
-    - vector_weight is weight given to the vector score (0..1). Keyword weight = 1 - vector_weight.
+    Hybrid retrieval: combine vector (embedding) similarity with BM25 lexical search.
+    - vector_weight is weight given to the vector score (0..1). BM25 weight = 1 - vector_weight.
     - top_k number of results to return.
     """
 
@@ -16,7 +17,7 @@ def get_hybrid_context(query, window_minutes=60, top_k=10, vector_weight=0.7):
     current_time = time.time()
     time_threshold = current_time - (window_minutes * 60)
 
-    # --- Vector search: ask Chroma for nearest neighbors and distances ---
+    # --- Vector search ---
     vector_res = collection.query(
         query_texts=[query],
         n_results=top_k,
@@ -45,7 +46,7 @@ def get_hybrid_context(query, window_minutes=60, top_k=10, vector_weight=0.7):
     with open("./data/threat_intel_vector_scores.json", "w") as f:
         json.dump(vector_scores, f)
 
-    # --- Keyword search ---
+    # --- BM25 search ---
     all_data = collection.get(
         where={"timestamp": {"$gte": time_threshold}},
         include=["documents", "metadatas"]
@@ -62,32 +63,45 @@ def get_hybrid_context(query, window_minutes=60, top_k=10, vector_weight=0.7):
         return "No threats detected in the last {} minutes.".format(window_minutes)
 
     def tokenize(text):
+        """Tokenize text for BM25"""
         tokens = re.findall(r"\w+", (text or "").lower())
-        return set(tokens)
+        return tokens
 
-    query_tokens = tokenize(query)
+    # Tokenize
+    tokenized_docs = [tokenize(doc) for doc in docs]
 
-    keyword_scores = {}
-    for _id, doc in zip(ids, docs):
-        doc_tokens = tokenize(doc)
-        if not query_tokens:
-            score = 0.0
-        else:
-            overlap = len(query_tokens.intersection(doc_tokens))
-            score = overlap / len(query_tokens)
-        keyword_scores[_id] = float(score)
+    bm25 = BM25Okapi(tokenized_docs)
     
-    with open("./data/keyword_scores.json", "w") as f:
-        json.dump(keyword_scores, f)
+    # Tokenize query
+    tokenized_query = tokenize(query)
 
-    # --- Ranker ---
+    bm25_scores_raw = bm25.get_scores(tokenized_query)
+
+    bm25_scores = {}
+    if len(bm25_scores_raw) > 0:
+        max_score = max(bm25_scores_raw)
+        min_score = min(bm25_scores_raw)
+        
+        for _id, score in zip(ids, bm25_scores_raw):
+            if max_score == min_score:
+                normalized_score = 1.0 if max_score > 0 else 0.0
+            else:
+                normalized_score = (score - min_score) / (max_score - min_score)
+            bm25_scores[_id] = float(normalized_score)
+    else:
+        bm25_scores = {_id: 0.0 for _id in ids}
+    
+    with open("./data/bm25_scores.json", "w") as f:
+        json.dump(bm25_scores, f)
+
+    # --- Ranker (combine vector + BM25) ---
     combined_scores = {}
-    all_candidate_ids = set(list(vector_scores.keys()) + list(keyword_scores.keys()))
+    all_candidate_ids = set(list(vector_scores.keys()) + list(bm25_scores.keys()))
 
     for _id in all_candidate_ids:
         v = vector_scores.get(_id, 0.0)
-        k = keyword_scores.get(_id, 0.0)
-        combined = vector_weight * v + (1.0 - vector_weight) * k
+        b = bm25_scores.get(_id, 0.0)
+        combined = vector_weight * v + (1.0 - vector_weight) * b
         combined_scores[_id] = combined
 
     # Pick top_k

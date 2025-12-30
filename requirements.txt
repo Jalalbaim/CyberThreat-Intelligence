@@ -6,4 +6,4 @@ chromadb>=0.4.24
 numpy>=1.26.0
 scikit-learn>=1.4.0
 sqlite-utils>=3.36
-
+rank_bm25>=0.2.2
