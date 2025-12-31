@@ -4,7 +4,7 @@ def generate_threat_report(query, context):
     system_prompt = (
         "You are an expert Cyber Threat Intelligence Analyst. "
         "Based ONLY on the provided real-time data from the last 60 minutes, "
-        # "provide a concise summary, a list of IoCs, and a recommended patch/mitigation priority."
+        "provide a concise summary, and a list of IoCs."
     )
     
     full_prompt = f"{system_prompt}\n\nUSER QUERY: {query}\n\nDATA CONTEXT:\n{context}"

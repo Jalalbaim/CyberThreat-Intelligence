@@ -4,7 +4,7 @@ import chromadb
 import json 
 from rank_bm25 import BM25Okapi
 
-def get_hybrid_context(query, window_minutes=60, top_k=10, vector_weight=0.7):
+def get_hybrid_context(query, window_minutes=60, top_k=5, vector_weight=0.7):
     """
     Hybrid retrieval: combine vector (embedding) similarity with BM25 lexical search.
     - vector_weight is weight given to the vector score (0..1). BM25 weight = 1 - vector_weight.
