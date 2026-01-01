@@ -1,13 +1,12 @@
 <div align="center">
 
-# 🛡️ CyberThreat Intelligence System
+# CyberThreat Intelligence System
 
 ### Real-Time Threat Detection & Analysis with RAG Architecture
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![Kafka](https://img.shields.io/badge/Apache%20Kafka-3.6.0-black?style=for-the-badge&logo=apache-kafka)](https://kafka.apache.org/)
 [![Ollama](https://img.shields.io/badge/Ollama-Gemma%203:4b-purple?style=for-the-badge)](https://ollama.com/)
-[![License](https://img.shields.io/badge/License-Educational-green?style=for-the-badge)](LICENSE)
 
 </div>
 
@@ -23,7 +22,7 @@ A **RAG (Retrieval-Augmented Generation)** system that continuously monitors cyb
 
 ### 🚀 Real-Time Processing
 
-- **Live ingestion** from AlienVault OTX
+- **Live ingestion** from AlienVault OTX (and other APIs)
 - **Kafka streaming** for scalable data flow
 - **60-minute time window** for fresh intelligence
 
@@ -117,30 +116,25 @@ graph LR
 ```
 CyberThreat-Intelligence/
 │
-├── 🎯 app.py                    # Main CLI application
-├── 📋 requirements.txt          # Python dependencies
+├── app.py
+├── requirements.txt          # Python dependencies
 │
-├── 🧠 brain/                    # Intelligence layer
-│   ├── retriever.py            # Hybrid search engine
-│   └── generator.py            # LLM report generator
+├── brain/                    # LLM
+│   ├── retriever.py
+│   └── generator.py
 │
-├── 📡 ingestion/                # Data pipeline
+├── ingestion/                # Ingestion pipeline
 │   ├── producers/
-│   │   └── otx_producer.py     # AlienVault OTX ingestion
+│   │   └── otx_producer.py
 │   └── consumers/
-│       └── transformer.py      # Kafka → Storage processor
+│       └── transformer.py
 │
-├── 📊 schemas/                  # Data models
-│   └── threat_model.py         # ThreatRecord schema
-│
-└── 💾 data/                     # Runtime databases
-    ├── threat_archive.db       # SQLite archival
-    └── chroma_db/              # ChromaDB vector store
+└── data/
+    ├── threat_archive.db     # SQLite
+    └── chroma_db/            # ChromaDB
 ```
 
 ## 🎬 Running the System
-
-### 🔥 Full Pipeline (7 terminals)
 
 <details>
 <summary><b>Click to expand step-by-step guide</b></summary>
@@ -215,16 +209,14 @@ python CyberThreat-Intelligence/app.py
 ```bash
 $ python CyberThreat-Intelligence/app.py
 
-🛡️ Cyber Threat Intelligence Reporter Active
-
 Enter your query: What are the latest phishing campaigns?
 
-🔍 Searching last 60 minutes of data...
-🧠 Generating intelligence report via Gemma 3:4b...
+Searching last 60 minutes of data...
+Generating intelligence report via Gemma 3:4b...
 
-==================================================
+===========================================================
               FINAL THREAT BRIEF
-==================================================
+===========================================================
 
 📌 SUMMARY
 In the past hour, 12 new phishing campaigns were detected
@@ -244,16 +236,14 @@ credential harvesting via fake login portals.
 3. Alert security awareness training team
 4. Monitor for similar patterns in next 24h
 
-==================================================
+===========================================================
 ```
 
-## 🧠 Enriched Threat Intelligence Pipeline
+## II. Enriched Threat Intelligence Pipeline
 
 In this part, the system was **architecturally designed to support multiple threat intelligence sources**
 (AlienVault OTX, VirusTotal, MISP) , each intelligence source is isolated in its own Kafka producer
 and normalized into a shared ThreatRecord schema, ensuring downstream components remain source-agnostic.
-while the **final operational pipeline focuses on a single
-reliable ingestion source** due to practical constraints.
 
 ## 🔹 AlienVault OTX
 
@@ -261,14 +251,9 @@ reliable ingestion source** due to practical constraints.
 
 AlienVault OTX is the main threat intelligence feed actively used by the system. It provides Indicators of Compromise (IoCs), campaign context, and threat-related metadata.
 
-The data is continuously ingested using a Kafka-based pipeline.
-
-- Provides IPs, domains, URLs, and file hashes
-- Includes campaign and pulse context
-- Community-driven and frequently updated
 - Actively ingested via a Kafka producer (`otx_producer.py`)
 
-## ⚠️ Explored but Not Fully Integrated Sources
+## 🔹 Explored but Not Fully Integrated Sources
 
 The following sources were explored during development but were **not enabled in the final
 ingestion pipeline due to practical limitations**.
@@ -279,32 +264,12 @@ ingestion pipeline due to practical limitations**.
 
 VirusTotal was intended to enrich IoCs with reputation information such as detection counts and antivirus verdicts.
 
-Although VirusTotal offers valuable enrichment capabilities, it was excluded from the live ingestion pipeline due to the following constraints:
+It was excluded from the live ingestion pipeline due to the following constraints:
 
 - **Strict API rate limits** on free access tiers
 - **Commercial licensing requirements** for sustained or large-scale usage
-- Poor suitability for **continuous, near real-time ingestion** without paid access
 
 As a result, VirusTotal was deemed incompatible with the project’s runtime ingestion requirements and operational goals.
-
-Quota exceeded notification:
-
-```
-Hello,
-
-This is a notification to inform you that you have exceeded the following VirusTotal service component allowance:
-
-Component: Daily VirusTotal API calls
-Affected account: Pacman888
-Quota limit: 500 requests
-Quota consumed: 500 requests
-Notification date: 2025-12-29 at 12:30 (UTC)
-
-All further usage of the affected component is currently capped until the next metering period.
-At a technical level, any additional web or API requests will receive a "429 Quota Exceeded" HTTP status code.
-
-As a result, any scripts, automated workflows, or integrations relying on this service may temporarily fail.
-```
 
 ### 🔸 MISP (CERT-FR Public Feed)
 
@@ -312,12 +277,11 @@ As a result, any scripts, automated workflows, or integrations relying on this s
 
 MISP ingestion was explored using the CERT-FR public feed, but practical limitations prevented effective integration:
 
-- Public feeds expose only **partial, attribute-level data**
 - **Full event context** (relationships, timelines, campaign structure) is unavailable
 - **Real-time ingestion** is limited and inconsistent and do not change frequently.
 
 Effective use of MISP would require deploying and maintaining a **private MISP instance** with full event access, synchronization, and governance.  
-Such a setup would be disproportionately complex and resource-intensive for a small-scale academic project.
+Such a setup would be complex and resource-intensive for a small-scale project.
 
 ## 🏗️ Overall Pipeline Design (Multi-Source)
 
@@ -325,8 +289,9 @@ Such a setup would be disproportionately complex and resource-intensive for a sm
 ┌──────────────────────────┐
 │       1. INGESTION       │
 │                          │
-│ • OTX Producer           │       Pulls raw threat intel
+│ • OTX Producer           │
 │ • MISP Producer          │
+│ • VT Producer            │
 └────────────┬─────────────┘
              │
              ▼
@@ -341,9 +306,9 @@ Such a setup would be disproportionately complex and resource-intensive for a sm
              ▼
 ┌──────────────────────────┐
 │      3. ENRICHMENT       │
-│                          │    • Queries VirusTotal (Not used in ingestion because of rate limits)
+│                          │
 │ vt_enricher.py           │    • Consumer from raw_threats
-│ Consumer and Producer    │    • Producer to enriched_threats     │
+│ Consumer and Producer    │    • Producer to enriched_threats
 └────────────┬─────────────┘
              │
              ▼
@@ -385,21 +350,6 @@ Such a setup would be disproportionately complex and resource-intensive for a sm
 In the final implementation, **AlienVault OTX** was selected as the sole active threat intelligence ingestion source.  
 This decision was driven by practical constraints related to accessibility, cost, and operational feasibility rather than theoretical completeness.
 
-## Why AlienVault OTX Was Used
-
-AlienVault OTX was chosen because it aligns well with the project’s real-time cyber threat reporting objectives:
-
-- Provides **context-rich threat intelligence**, not just raw indicators of compromise
-- Freely accessible with **no restrictive licensing requirements**
-- Supports **near real-time ingestion**, suitable for SOC-style analysis
-- Integrates naturally into a **Kafka-based streaming architecture**
-
-For automated intelligence report generation, OTX offered the most balanced trade-off between data quality, contextual depth, and operational simplicity.
-
-Although VirusTotal and MISP offer valuable intelligence, their access limitations and operational overhead made them unsuitable for this project’s real-time ingestion goals.
-
-The final architecture prioritizes operational realism, reproducibility, and sustainability, while remaining multi-source ready for future extensions.
-
 ## 👥 Contributors
 
 <table>
@@ -427,7 +377,7 @@ The final architecture prioritizes operational realism, reproducibility, and sus
 
 ### 🌟 If this project helped you, consider giving it a star!
 
-Made with ❤️ by cybersecurity enthusiasts
+Made with ❤️ by enthusiasts
 
 **[⬆ Back to Top](#-cyberthreat-intelligence-system)**
 
